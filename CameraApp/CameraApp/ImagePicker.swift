@@ -3,47 +3,43 @@ import UIKit
 import SwiftUI
 
 struct ImagePicker: UIViewControllerRepresentable {
-
-    @Binding var selectedImage: UIImage
-    @Environment(\.presentationMode) var presentationMode
-    
     var sourceType: UIImagePickerController.SourceType = .photoLibrary
-
-    func makeUIViewController(context: UIViewControllerRepresentableContext<ImagePicker>) -> UIImagePickerController {
-
+    
+    @Binding var showingType: PhotoSheetType?
+    @Binding var image: Data
+    
+    func makeCoordinator() -> ImagePicker.Coordinator {
         let imagePicker = UIImagePickerController()
-        imagePicker.allowsEditing = false
-        imagePicker.sourceType = sourceType
-        imagePicker.delegate = context.coordinator
-
-        return imagePicker
+        return ImagePicker.Coordinator(child1: self)
     }
-
+    
+    func makeUIViewController(context: UIViewControllerRepresentableContext<ImagePicker>) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = sourceType
+        return picker
+    }
+    
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePicker>) {
-
+        
     }
     
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-}
-
-final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
- 
-    var parent: ImagePicker
- 
-    init(_ parent: ImagePicker) {
-        self.parent = parent
-    }
-    
-    
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
- 
-        if let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage {
-            parent.selectedImage = image
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        var child : ImagePicker
+        init(child1: ImagePicker) {
+            child = child1
         }
- 
-        parent.presentationMode.wrappedValue.dismiss()
+        
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            self.child.showingType = nil /// set to nil here
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            let image = info[.originalImage] as! UIImage
+            let data = image.jpegData(compressionQuality: 0.45)
+            self.child.image = data!
+            self.child.showingType = nil /// set to nil here
+        }
     }
 }
-
